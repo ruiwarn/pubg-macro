@@ -1,8 +1,8 @@
--- Soldier76 G HUB v2.6.2 · G6 长按超过 500ms 后松开切换 · Lua 5.1 兼容
+-- Soldier76 G HUB v2.6.3 · G6 按下 500ms 后立即切换 · Lua 5.1 兼容
 -- AK 已合适时，只调前面的 M4 专用后段倍率；切换声音由 scopeFeedback 控制。
 UserConfig = {
     -- 【1】当前枪号：必须与你游戏里实际拿的枪一致，不会自动识别
-    currentGun = 2,
+    currentGun = 7,
     -- 1=AKM       2=M416       3=AUG/QBZ        4=G36C       5=SCAR-L
     -- 6=M16A4     7=Beryl M762 8=DP-28      9=UMP45     10=Vector
     -- 11=Micro UZI 12=Tommy Gun
@@ -12,7 +12,7 @@ UserConfig = {
     -- 【2】整体下压力：影响基础镜和 4x；这是脚本倍率，不是游戏灵敏度
     -- 弹着点整体上爬：增大，例如 1.00 -> 1.05；整体下沉：减小到 0.95
     -- 每次 0.05，接近合适后每次 0.01；不要同时改 DPI/游戏灵敏度/配件。
-    sensitivity = 3.8,
+    sensitivity = 3.3,
 
     -- 【M4 专用】AK 已合适时不要动上面的整体力度，只调这两个值
     -- 第 11 个弹道点起，下压力乘 0.85（暂减 15%）；只影响 M416，前段和 AK 不变。
@@ -30,14 +30,14 @@ UserConfig = {
 
     -- 【5】高低提示音：Windows“切换键”需开启；高音/Scroll Lock 亮=4x，低音/灭=基础镜
     -- false 恢复无反馈；true 会使用 Scroll Lock 状态，不要将它绑定为游戏操作。
-    scopeFeedback = true,
+    scopeFeedback = false,
 
-    -- 【6】G6 长按门槛：按住超过此毫秒数后松开才切换一次；短按忽略。
-    -- 默认超过 500ms；想更难误触可改为 700。切换前松开左键。
+    -- 【6】G6 计时：按下后到达此毫秒数就立即切换，不等松开。
+    -- G HUB 无法轮询 G6 状态，所以提前松开也会在 500ms 时切换；切换前松开左键。
     scopeHoldMs = 500,
 
     -- ---------------- 不常改 ----------------
-    scopeToggleButton = 6, -- G6 狙击键长按超过门槛后松开：基础镜 <-> 4x
+    scopeToggleButton = 0, -- G6 狙击键按下到达门槛：基础镜 <-> 4x，原来是6,关闭4倍模式改成0
     allowFallback = false, -- 保持 false；枪号错误时不下拉
     power = 5,            -- 仅枪号不存在且 allowFallback=true 时生效，正常调参不用它
 }
@@ -90,7 +90,6 @@ local FALLBACK_LIMIT_MS = 10000
 local ScopeBase = UserConfig.scope
 local profileActive = true
 local scope4xEnabled = false
-local scopePressedAt = nil -- 只记首次按下；重复按下事件不能把长按计时清零。
 
 local function IsFiniteNonnegative(value)
     return type(value) == "number" and value == value
@@ -279,7 +278,6 @@ function OnEvent(event, arg, family)
     -- 配置生命周期先处理，不能被开火判断或按键映射跳过。
     if event == "PROFILE_ACTIVATED" or event == "PROFILE_DEACTIVATED" then
         profileActive = event == "PROFILE_ACTIVATED"
-        scopePressedAt = nil
         SetScopeMode(false)
         EnablePrimaryMouseButtonEvents(profileActive)
         return
@@ -291,23 +289,16 @@ function OnEvent(event, arg, family)
     -- 保留本机验证过的事件 2<->3 映射，且只对鼠标事件生效。
     if arg == 2 then arg = 3 elseif arg == 3 then arg = 2 end
     if arg == UserConfig.scopeToggleButton and type(arg) == "number" and arg >= 4 then
-        if event == "MOUSE_BUTTON_PRESSED" then
-            if scopePressedAt == nil then scopePressedAt = GetRunningTime() end
-            return
-        end
-        local started = scopePressedAt
-        scopePressedAt = nil -- 先消费这次手势；重复松开事件不能再次切换。
-        if started == nil then return end
-        local held = GetRunningTime() - started
+        if event ~= "MOUSE_BUTTON_PRESSED" then return end
         local limit = UserConfig.scopeHoldMs
-        if not IsFiniteNonnegative(limit) or held <= limit then return end
+        if not IsFiniteNonnegative(limit) then return end
+        Sleep(math.floor(limit))
         local enabled = scope4xEnabled
         if UserConfig.scopeFeedback then enabled = IsKeyLockOn("scrolllock") end
         SetScopeMode(not enabled)
         return
     end
     if event == "MOUSE_BUTTON_PRESSED" and arg == 1 then
-        scopePressedAt = nil -- 开火取消尚未完成的 G6 手势，避免松键后补切换。
         Main()
     end
     -- 不自动按 Tab，不释放脚本未按下的 Ctrl/Shift/Alt。
