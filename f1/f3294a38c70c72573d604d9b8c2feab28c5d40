@@ -1,0 +1,14 @@
+PUBG.lua
+  h_927be59fb6fa2b 1,5,15,33,35-36,40,292,294-295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f1f3294a38c70c72573d604d9b8c2feab28c5d40",
+  "prompts": {},
+  "humans": {
+    "h_927be59fb6fa2b": {
+      "author": "cloudcli <cloudli@mail.com>"
+    }
+  }
+}
