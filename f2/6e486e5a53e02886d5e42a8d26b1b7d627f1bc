@@ -1,0 +1,51 @@
+PUBG.lua
+  s_eb7ac3ad2c78f9::t_82678e4cc94767 12-13
+  s_470d818b4b6816::t_3913d99eab8b3a 62-66,68-73,75-76,78-81
+  s_eb7ac3ad2c78f9::t_51ef3d2c99978a 8,291
+  h_927be59fb6fa2b 67,77
+  s_eb7ac3ad2c78f9::t_0292248b32aba9 2,55-56,139,163,210
+  s_eb7ac3ad2c78f9::t_1d84c1e70f9ecd 6,57-60,74
+  s_eb7ac3ad2c78f9::t_ae24e0650b76c4 9-11,14-15,94-101,282,292-302,320
+  s_98f0119a72b15f::t_d708c7da3bd37b 7,102
+tests/test_pubg.lua
+  s_eb7ac3ad2c78f9::t_51ef3d2c99978a 39-47,59-60,73,77,88-95,119
+  s_eb7ac3ad2c78f9::t_99ba5e97151de6 48-58,61-65,71,74,82,96-97,112
+  s_98f0119a72b15f::t_e53e9785aaed9a 1-38,66-70,72,75-76,78-81,83-87,98-111,113-118,120-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "f26e486e5a53e02886d5e42a8d26b1b7d627f1bc",
+  "prompts": {},
+  "humans": {
+    "h_927be59fb6fa2b": {
+      "author": "cloudcli <cloudli@mail.com>"
+    }
+  },
+  "sessions": {
+    "s_470d818b4b6816": {
+      "agent_id": {
+        "tool": "zcode",
+        "id": "session_01f87fab956d2d34265d5d7138ba2d0c",
+        "model": "Qwen/Qwen3.8-27B"
+      },
+      "human_author": "cloudcli <cloudli@mail.com>"
+    },
+    "s_98f0119a72b15f": {
+      "agent_id": {
+        "tool": "zcode",
+        "id": "session_20f5fdc7873fc70ff5251d8ee6859355",
+        "model": "Qwen/Qwen3.8-27B"
+      },
+      "human_author": "cloudcli <cloudli@mail.com>"
+    },
+    "s_eb7ac3ad2c78f9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a166d5-15fd-7b51-9429-14b26d85e6e8",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "cloudcli <cloudli@mail.com>"
+    }
+  }
+}
