@@ -1,24 +1,23 @@
 -- Soldier76 G HUB v2.6.3 · G6 按下 500ms 后立即切换 · Lua 5.1 兼容
--- AK 已合适时，只调前面的 M4 专用后段倍率；切换声音由 scopeFeedback 控制。
+-- 单独调枪只改 GunData 中该枪的 ballistic；切换声音由 scopeFeedback 控制。
 UserConfig = {
     -- 【1】当前枪号：必须与你游戏里实际拿的枪一致，不会自动识别
     currentGun = 7,
-    -- 1=AKM       2=M416       3=AUG/QBZ        4=G36C       5=SCAR-L
-    -- 6=M16A4     7=Beryl M762 8=DP-28      9=UMP45     10=Vector
-    -- 11=Micro UZI 12=Tommy Gun
-    -- 13=FAMAS   14=K2       15=AUG       16=Groza    17=ACE32
-    -- 18=MP5K    19=P90；13-19 的下压力仍为估算，6 只适用于三连发。
+    -- 枪号和枪名以 GunData 为准；currentGun 和快捷键目标需指向存在的枪号。
+
+    -- 快捷切枪：先松开左键，按住 Alt 再按 DPI＋/DPI－；右边填要切换的枪号。
+    -- 按钮编号暂按 DPI＋=8、DPI－=7；若本机不同，修改左边的编号。
+    -- 在 G HUB 中取消这两个按钮的原 DPI 分配，避免切枪时同时改变 DPI。
+    gunSwitch = {
+        [8] = 7, -- DPI＋对应的枪号
+        [7] = 2, -- DPI－对应的枪号
+    },
+    -- 当前枪名和序号显示在 G HUB 脚本编辑器下方的输出栏。
 
     -- 【2】整体下压力：影响基础镜和 4x；这是脚本倍率，不是游戏灵敏度
     -- 弹着点整体上爬：增大，例如 1.00 -> 1.05；整体下沉：减小到 0.95
     -- 每次 0.05，接近合适后每次 0.01；不要同时改 DPI/游戏灵敏度/配件。
     sensitivity = 3.3,
-
-    -- 【M4 专用】AK 已合适时不要动上面的整体力度，只调这两个值
-    -- 第 11 个弹道点起，下压力乘 0.85（暂减 15%）；只影响 M416，前段和 AK 不变。
-    -- 仍下沉：0.85 -> 0.80；改后上爬：0.85 -> 0.90；1.0 可恢复旧力度。
-    m416LateScale = 0.85,
-    m416LateStartShot = 11,
 
     -- 【3】只在“基础镜已调好，4x 仍不合适”时调：仅影响 G6 开启的 4x
     -- 上爬增大，例如 3.9 -> 4.0；下沉减小到 3.8；与 sensitivity 相乘。
@@ -53,33 +52,34 @@ UserConfig = {
 -- ============================================================
 
 
+-- ballistic 每项为 {本段结束点序号, 本段每点力度}，力度仍乘公共 sensitivity 和倍镜系数。
+-- 调单把枪只需改、增加或删除该枪的分段；结束点须为递增整数（最多 1000），力度须为非负数，可用小数。
+-- 例如 {4,18},{10,24} 表示第 5～10 点均用 24。
+-- 整把枪可直接新增或删除；[枪号] 须唯一，可以不连续，删除后无需重排编号。
+-- timeOrigin=1 将 {1,0} 作为开火时的零锚点；省略或填 0 保留旧估算曲线的起始时序。
+-- 复制条目时保留 timeOrigin；时序跟随枪的数据，与枪号无关。
 GunData = {
-    [1]  = { name = "AKM",       interval = 99,  ballistic = { {1,0},{2,42},{5,25},{10,32},{40,40} } },
-    [2]  = { name = "M416",      interval = 85,  ballistic = { {1,0},{2,35},{4,18},{10,24},{15,32},{30,30},{40,37} } },
-    [3]  = { name = "QBZ",       interval = 92,  ballistic = { {1,0},{2,34},{5,18},{10,22},{15,32},{20,34},{40,36} } },
-    [4]  = { name = "G36C",      interval = 86,  ballistic = { {1,0},{2,40},{5,16},{10,26},{15,30},{20,34},{40,36} } },
-    [5]  = { name = "SCAR-L",    interval = 60000/650, ballistic = { {1,0},{2,30},{5,20},{10,24},{15,28},{40,32} } },
-    [6]  = { name = "M16A4",     interval = 60000/800, burstShots = 3, ballistic = { {1,0},{5,20},{40,24} } },
-    [7]  = { name = "Beryl M762",interval = 86,  ballistic = { {1,0},{2,44},{3,24},{5,28},{10,33},{15,45},{30,47},{40,51} } },
-    [8]  = { name = "DP-28",     interval = 100, ballistic = { {1,0},{2,30},{5,20},{47,30} } },
-    [9]  = { name = "UMP45",     interval = 94,  ballistic = { {1,0},{5,18},{15,30},{35,32} } },
-    [10] = { name = "Vector",    interval = 55,  ballistic = { {1,0},{6,16},{10,20},{13,24},{15,28},{20,32},{33,34} } },
-    [11] = { name = "Micro UZI", interval = 46,  ballistic = { {1,0},{2,13},{10,12},{15,20},{35,30} } },
-    [12] = { name = "Tommy Gun", interval = 84,  ballistic = { {1,0},{3,20},{6,21},{8,24},{10,30},{15,40},{50,45} } },
-    -- 以下 7 把的力度曲线仍是旧版估算，不能当成上游实测；间隔另有部分官方依据。
-    [13] = { name = "FAMAS",     interval = 60000/900, ballistic = { {1,0},{5,20},{40,26} } },
-    [14] = { name = "K2",        interval = 60000/700, ballistic = { {1,0},{5,22},{40,28} } },
-    [15] = { name = "AUG",       interval = 60000/720, ballistic = { {1,0},{5,20},{40,26} } },
-    [16] = { name = "Groza",     interval = 86,  ballistic = { {1,0},{2,40},{5,26},{40,42} } },
-    [17] = { name = "ACE32",     interval = 60000/680, ballistic = { {1,0},{2,38},{5,24},{40,40} } },
-    [18] = { name = "MP5K",      interval = 60,  ballistic = { {1,0},{6,14},{40,28} } },
-    [19] = { name = "P90",       interval = 60000/1000, ballistic = { {1,0},{6,16},{40,30} } },
+    [1]  = { name = "AKM",       interval = 99,  timeOrigin = 1, ballistic = { {1,0},{2,42},{5,25},{10,32},{15,40},{20,40},{25,40},{30,40},{35,40},{40,40} } },
+    [2]  = { name = "M416",      interval = 85,  timeOrigin = 1, ballistic = { {1,0},{2,35},{4,18},{6,24},{10,24},{15,27.2},{20,25.5},{25,25.5},{30,25.5},{35,31.45},{40,31.45} } },
+    [3]  = { name = "QBZ",       interval = 92,  timeOrigin = 1, ballistic = { {1,0},{2,34},{5,18},{10,22},{15,32},{20,34},{25,36},{30,36},{35,36},{40,36} } },
+    [4]  = { name = "G36C",      interval = 86,  timeOrigin = 1, ballistic = { {1,0},{2,40},{5,16},{10,26},{15,30},{20,34},{25,36},{30,36},{35,36},{40,36} } },
+    [5]  = { name = "SCAR-L",    interval = 60000/650, timeOrigin = 1, ballistic = { {1,0},{2,30},{5,20},{10,24},{15,28},{20,32},{25,32},{30,32},{35,32},{40,32} } },
+    [6]  = { name = "AUG",       interval = 60000/800, timeOrigin = 1, burstShots = 3, ballistic = { {1,0},{5,20},{10,24},{15,24},{20,24},{25,24},{30,24},{35,24},{40,24} } },
+    [7]  = { name = "Beryl M762",interval = 86,  timeOrigin = 1, ballistic = { {1,0},{2,44},{3,24},{5,28},{10,33},{15,45},{20,47},{25,47},{30,47},{35,51},{40,51} } },
+    [8]  = { name = "DP-28",     interval = 100, timeOrigin = 1, ballistic = { {1,0},{2,30},{5,20},{10,30},{15,30},{20,30},{25,30},{30,30},{35,30},{40,30},{45,30},{47,30} } },
+    [9]  = { name = "UMP45",     interval = 94,  timeOrigin = 1, ballistic = { {1,0},{5,18},{10,30},{15,30},{20,32},{25,32},{30,32},{35,32} } },
+    [10] = { name = "Vector",    interval = 55,  timeOrigin = 1, ballistic = { {1,0},{2,13},{6,20},{10,20},{13,24},{15,28},{20,32},{25,34},{30,34},{33,34} } },
+    [11] = { name = "Micro UZI", interval = 46,  timeOrigin = 1, ballistic = { {1,0},{2,13},{6,12},{10,12},{15,20},{20,30},{25,30},{30,30},{35,30} } },
+    [12] = { name = "Tommy Gun", interval = 84,  timeOrigin = 1, ballistic = { {1,0},{3,20},{6,21},{8,24},{10,30},{15,40},{20,45},{25,45},{30,45},{35,45},{40,45},{45,45},{50,45} } },
+    -- 以下力度曲线仍是旧版估算，不能当成上游实测；间隔另有部分官方依据。
+    [13] = { name = "FAMAS",     interval = 60000/900, ballistic = { {1,0},{5,20},{10,26},{15,26},{20,26},{25,26},{30,26},{35,26},{40,26} } },
+    [14] = { name = "K2",        interval = 60000/700, ballistic = { {1,0},{5,22},{10,28},{15,28},{20,28},{25,28},{30,28},{35,28},{40,28} } },
+    [15] = { name = "M16A4",       interval = 60000/720, ballistic = { {1,0},{5,20},{10,26},{15,26},{20,26},{25,26},{30,26},{35,26},{40,26} } },
+    [16] = { name = "Groza",     interval = 86,  ballistic = { {1,0},{2,40},{5,26},{10,42},{15,42},{20,42},{25,42},{30,42},{35,42},{40,42} } },
+    [17] = { name = "ACE32",     interval = 60000/680, ballistic = { {1,0},{2,38},{5,24},{10,40},{15,40},{20,40},{25,40},{30,40},{35,40},{40,40} } },
+    [18] = { name = "MP5K",      interval = 60,  ballistic = { {1,0},{6,14},{11,28},{16,28},{21,28},{26,28},{31,28},{36,28},{40,28} } },
+    [19] = { name = "P90",       interval = 60000/1000, ballistic = { {1,0},{6,16},{11,30},{16,30},{21,30},{26,30},{31,30},{36,30},{40,30} } },
 }
-
--- 上游 auto() 用 ceil(t/interval)+1，第 1 个零点是 t=0 的锚点。
--- 因此原版 12 把枪的第 2 个值从开火后第一个间隔开始施加，不能先空等一发。
--- 估算项没有上游时序依据，保留旧时序；自定义曲线未设置时也按 timeOrigin=0。
-for gunKey = 1, 12 do GunData[gunKey].timeOrigin = 1 end
 
 -- 时间与输出限制集中定义，避免分散的魔数。
 local TICK_MS = 16
@@ -90,6 +90,15 @@ local FALLBACK_LIMIT_MS = 10000
 local ScopeBase = UserConfig.scope
 local profileActive = true
 local scope4xEnabled = false
+
+local function LogCurrentGun()
+    local gun = GunData[UserConfig.currentGun]
+    if gun then
+        OutputLogMessage("当前枪械：[%s] %s\n", tostring(UserConfig.currentGun), gun.name)
+    else
+        OutputLogMessage("当前枪号 %s 不存在，请检查 currentGun\n", tostring(UserConfig.currentGun))
+    end
+end
 
 local function IsFiniteNonnegative(value)
     return type(value) == "number" and value == value
@@ -127,7 +136,7 @@ end
 
 -- 每轮只计算一次前缀和；timeOrigin=1 跳过上游的零起点，不跳过位移。
 -- 前缀和直接给出累计目标，因此跨过一个或多个逐发边界都不会漏算/多算。
-local function BuildBallistic(gun, gunKey)
+local function BuildBallistic(gun)
     if type(gun) ~= "table" or not IsFiniteNonnegative(gun.interval)
         or gun.interval == 0 or type(gun.ballistic) ~= "table"
         or #gun.ballistic == 0 then
@@ -135,14 +144,6 @@ local function BuildBallistic(gun, gunKey)
     end
     local prefix = { [0] = 0 }
     local count = 0
-    local lateStart, lateScale = math.huge, 1
-    if gunKey == 2 then
-        lateStart, lateScale = UserConfig.m416LateStartShot, UserConfig.m416LateScale
-        if not IsFiniteNonnegative(lateScale) or not IsFiniteNonnegative(lateStart)
-            or lateStart < 2 or lateStart > 1000 or lateStart ~= math.floor(lateStart) then
-            return nil
-        end
-    end
     -- ipairs 会静默忽略空洞后面的条目；先确认确实是连续数组。
     local segments = 0
     for key in pairs(gun.ballistic) do
@@ -159,9 +160,7 @@ local function BuildBallistic(gun, gunKey)
             return nil
         end
         for shot = count + 1, last do
-            local adjusted = amount
-            if shot >= lateStart then adjusted = adjusted * lateScale end
-            prefix[shot] = prefix[shot - 1] + adjusted
+            prefix[shot] = prefix[shot - 1] + amount
             if not IsFiniteNonnegative(prefix[shot]) then return nil end
         end
         count = last
@@ -208,7 +207,7 @@ local function Main()
     local prefix, count, origin
     local duration = FALLBACK_LIMIT_MS
     if gun then
-        prefix, count, origin = BuildBallistic(gun, UserConfig.currentGun)
+        prefix, count, origin = BuildBallistic(gun)
         if not prefix or not IsFiniteNonnegative(prefix[count] * scale) then
             OutputLogMessage("弹道配置无效，本轮取消\n")
             return
@@ -280,6 +279,7 @@ function OnEvent(event, arg, family)
         profileActive = event == "PROFILE_ACTIVATED"
         SetScopeMode(false)
         EnablePrimaryMouseButtonEvents(profileActive)
+        if profileActive then LogCurrentGun() end
         return
     end
     if not profileActive then return end
@@ -288,6 +288,18 @@ function OnEvent(event, arg, family)
 
     -- 保留本机验证过的事件 2<->3 映射，且只对鼠标事件生效。
     if arg == 2 then arg = 3 elseif arg == 3 then arg = 2 end
+    if event == "MOUSE_BUTTON_PRESSED" and IsModifierPressed("alt") then
+        local gunKey = UserConfig.gunSwitch[arg]
+        if gunKey ~= nil then
+            if GunData[gunKey] then
+                UserConfig.currentGun = gunKey
+                LogCurrentGun()
+            else
+                OutputLogMessage("切枪失败：枪号 %s 不存在，仍使用当前枪械\n", tostring(gunKey))
+            end
+            return
+        end
+    end
     if arg == UserConfig.scopeToggleButton and type(arg) == "number" and arg >= 4 then
         if event ~= "MOUSE_BUTTON_PRESSED" then return end
         local limit = UserConfig.scopeHoldMs
@@ -305,4 +317,5 @@ function OnEvent(event, arg, family)
 end
 
 SetScopeMode(false)
+LogCurrentGun()
 EnablePrimaryMouseButtonEvents(true)
